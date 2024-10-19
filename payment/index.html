@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran</title>
+    <script type="text/javascript"
+            src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key="CLIENT_KEY_MIDTRANS"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .payment-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .product {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .product img {
+            width: 100px;
+            border-radius: 10px;
+        }
+
+        .product-info {
+            flex-grow: 1;
+            margin-left: 20px;
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+        }
+
+        .quantity-selector button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .payment-form input, .payment-form select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .payment-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .payment-button:hover {
+            background-color: #388e3c;
+        }
+
+        .total-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="payment-container">
+    <h1>Pembayaran Produk Kamera</h1>
+    
+    <!-- Section Gambar dan Detail Produk -->
+    <div class="product">
+        <img src="/kamera/id-11134207-7r98x-lvpwfqewu9do71.webp" alt="Produk Kamera">
+        <div class="product-info">
+            <h2>Kamera Profesional</h2>
+            <div class="quantity-selector">
+                <button id="minus-btn">-</button>
+                <span id="quantity">1</span>
+                <button id="plus-btn">+</button>
+            </div>
+            <p id="price" data-price="300000">Rp300.000</p>
+        </div>
+    </div>
+
+    <!-- Form untuk Input Data Pembeli -->
+    <form id="payment-form" class="payment-form">
+        <input type="text" id="customer-name" placeholder="Nama Lengkap" required>
+        <input type="email" id="customer-email" placeholder="Email" required>
+        <input type="tel" id="customer-phone" placeholder="Nomor Telepon" required>
+
+        <!-- Pilihan Metode Pembayaran -->
+        <select id="payment-method" required>
+            <option value="" disabled selected>Pilih Metode Pembayaran</option>
+            <option value="gopay">GoPay</option>
+            <option value="ovo">OVO</option>
+            <option value="shopeepay">ShopeePay</option>
+            <option value="linkaja">LinkAja</option>
+            <option value="bca">BCA Transfer</option>
+            <option value="bni">BNI Transfer</option>
+            <option value="bri">BRI Transfer</option>
+            <option value="mandiri">Mandiri Transfer</option>
+            <option value="permata">Permata Transfer</option>
+        </select>
+
+        <!-- Tampilkan Total Harga -->
+        <p class="total-price">Total: <span id="total-price">Rp300.000</span></p>
+
+        <!-- Tombol Bayar -->
+        <button type="button" id="pay-button" class="payment-button">Bayar Sekarang</button>
+    </form>
+</div>
+
+<script type="text/javascript">
+    // Update Harga Ketika Jumlah Pesanan Ditambah atau Dikurangi
+    var quantityElement = document.getElementById('quantity');
+    var priceElement = document.getElementById('price');
+    var totalPriceElement = document.getElementById('total-price');
+    var basePrice = parseInt(priceElement.getAttribute('data-price')); // Harga satuan
+
+    var quantity = 1;
+
+    document.getElementById('minus-btn').addEventListener('click', function () {
+        if (quantity > 1) {
+            quantity--;
+            updatePrice();
+        }
+    });
+
+    document.getElementById('plus-btn').addEventListener('click', function () {
+        quantity++;
+        updatePrice();
+    });
+
+    function updatePrice() {
+        quantityElement.textContent = quantity;
+        var totalPrice = basePrice * quantity;
+        totalPriceElement.textContent = 'Rp' + totalPrice.toLocaleString();
+    }
+
+    // Menggunakan Snap API untuk memproses pembayaran
+    var payButton = document.getElementById('pay-button');
+    payButton.addEventListener('click', function () {
+        var customerName = document.getElementById('customer-name').value;
+        var customerEmail = document.getElementById('customer-email').value;
+        var customerPhone = document.getElementById('customer-phone').value;
+        var paymentMethod = document.getElementById('payment-method').value;
+        var totalPrice = basePrice * quantity;
+
+        // Mengirim data pembayaran ke server dan memulai Snap payment
+        fetch('http://localhost:8000/create_transaction', {  // Sesuaikan dengan server kamu
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: customerName,
+                email: customerEmail,
+                phone: customerPhone,
+                payment_method: paymentMethod,
+                amount: totalPrice
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            snap.pay(data.token); // Memulai pembayaran dengan token dari Midtrans
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+</script>
+
+</body>
+</html>
